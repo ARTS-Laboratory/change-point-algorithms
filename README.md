@@ -1,1 +1,1 @@
-# change-point-algorithms
+# Change Point Algorithms
