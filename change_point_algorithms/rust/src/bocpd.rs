@@ -1,4 +1,8 @@
 mod element;
+pub mod beta_cache;
+pub mod sparse_probs;
+pub mod dist_params;
+pub mod bocpd_model;
 
 use statrs::function::beta::beta;
 use std::collections::{HashMap, VecDeque};
