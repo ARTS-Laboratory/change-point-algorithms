@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
 use pyo3::{pyclass, pymethods, PyResult};
 use statrs::function::beta::beta;
-use crate::beta_cache::BetaCache;
+use super::beta_cache::BetaCache;
 use crate::bocpd::NormalInverseGamma;
 
 #[pyclass]
