@@ -1,12 +1,10 @@
-use std::iter::zip;
+use bocpd::bocpd_model::BocpdModel;
+use bocpd::beta_cache::BetaCache;
+use bocpd::dist_params::DistParams;
+use bocpd::sparse_probs::{SparseProb, SparseProbs};
 use pyo3::prelude::*;
-use dist_params::DistParams;
-use beta_cache::BetaCache;
-use sparse_probs::{SparseProb, SparseProbs};
+use std::iter::zip;
 
-mod dist_params;
-mod beta_cache;
-mod sparse_probs;
 pub mod bocpd;
 
 /// Updates the probability distribution for a set of T-distributions with observed point.
@@ -59,5 +57,6 @@ fn change_point_algorithms(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<DistParams>()?;
     m.add_class::<SparseProb>()?;
     m.add_class::<SparseProbs>()?;
+    m.add_class::<BocpdModel>()?;
     Ok(())
 }
