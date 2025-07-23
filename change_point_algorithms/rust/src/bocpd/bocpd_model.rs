@@ -92,7 +92,6 @@ impl BocpdModel {
         if self.curr_max < self.prev_max {
             self.probs.reset();
             self.params.reset(alpha, beta, mu, kappa).expect("Initial params should have been validated at construction.");
-            // self.params.reset_from_distribution(&self.initial_params).expect("Initial params should have been validated at construction.");
         } else {
             self.params.update_no_change(point, alpha, beta, mu, kappa);
         }
