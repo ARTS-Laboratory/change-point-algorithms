@@ -11,6 +11,9 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 pyo3 = { version = "0.24.1", features = ["extension-module"] }
 statrs = "0.18.0"
+itertools = "0.10.5"
+ndarray = "0.16.1"
+num-traits = "0.2.19"
 
 [dev-dependencies]
 criterion = "0.5.1"
