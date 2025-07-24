@@ -1,13 +1,17 @@
-use std::fmt;
 use pyo3::exceptions::PyValueError;
 use pyo3::PyErr;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct ProbabilityError(f64);
 
 impl fmt::Display for ProbabilityError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Input {} is not a valid probability. Must be between 0 and 1!", self.0)
+        write!(
+            f,
+            "Input {} is not a valid probability. Must be between 0 and 1!",
+            self.0
+        )
     }
 }
 
@@ -19,7 +23,7 @@ impl From<ProbabilityError> for PyErr {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Probability {
-    probability: f64
+    probability: f64,
 }
 
 impl Probability {

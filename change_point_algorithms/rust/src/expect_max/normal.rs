@@ -1,6 +1,6 @@
-use std::fmt;
 use pyo3::exceptions::PyValueError;
 use pyo3::PyErr;
+use std::fmt;
 #[derive(Debug, Clone)]
 pub struct InvalidFloatError(f64);
 
@@ -32,7 +32,9 @@ impl fmt::Display for NormalError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             NormalError::BadMean(ref err) => write!(f, "Bad mean: {}", err),
-            NormalError::BadStandardDeviation(ref err) => write!(f, "Bad standard deviation: {}", err),
+            NormalError::BadStandardDeviation(ref err) => {
+                write!(f, "Bad standard deviation: {}", err)
+            }
         }
     }
 }
@@ -51,7 +53,6 @@ impl fmt::Display for NormalError {
 //
 //     }
 // }
-
 
 // enum NormalKind {
 //     Normal {mean: f64, stddev: f64},
@@ -110,7 +111,13 @@ impl Normal {
 
     pub fn phi(&self, point: f64) -> f64 {
         match self.stddev {
-            0.0 => if point == self.mean {1.0} else {0.0},
+            0.0 => {
+                if point == self.mean {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
             _ => {
                 let denom: f64 = self.stddev * (2.0 * std::f64::consts::PI).sqrt();
                 let ex = -(0.5 * (point - self.mean).powi(2) / (self.stddev.powi(2)));
@@ -136,7 +143,6 @@ impl Normal {
 //        if point == self.mean {1.0} else {0.0}
 //     }
 // }
-
 
 #[cfg(test)]
 mod tests {

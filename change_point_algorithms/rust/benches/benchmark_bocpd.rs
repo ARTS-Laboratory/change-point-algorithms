@@ -4,7 +4,6 @@ use rand;
 use rand::distr::Distribution;
 use rand_distr::StandardNormal;
 
-
 pub fn bocpd_benchmark(c: &mut Criterion) {
     let data_size = 100_000;
     let mu = 0.0;
@@ -14,8 +13,18 @@ pub fn bocpd_benchmark(c: &mut Criterion) {
     let lambda = 0.5;
     let rng = rand::rng();
     let unknown_data: Vec<f64> = StandardNormal.sample_iter(rng).take(data_size).collect();
-    c.bench_function(
-        "bocpd naive vec", |b| b.iter(|| bocpd(black_box(unknown_data.iter()), mu, kappa, alpha, beta, lambda)));
+    c.bench_function("bocpd naive vec", |b| {
+        b.iter(|| {
+            bocpd(
+                black_box(unknown_data.iter()),
+                mu,
+                kappa,
+                alpha,
+                beta,
+                lambda,
+            )
+        })
+    });
 }
 
 criterion_group!(benches, bocpd_benchmark);

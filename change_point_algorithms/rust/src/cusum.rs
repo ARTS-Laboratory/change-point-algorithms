@@ -17,7 +17,6 @@ pub struct CusumV0 {
 
 #[pymethods]
 impl CusumV0 {
-
     pub fn mean(&self) -> f64 {
         self.mean
     }
@@ -79,7 +78,15 @@ impl CusumV1 {
         let mu = LastTwo::new(0.0, 0.0);
         let threshold = std_dev * h;
         let variance = std_dev.powi(2);
-        Self { mean, variance, mu, cp, cn, alpha, threshold }
+        Self {
+            mean,
+            variance,
+            mu,
+            cp,
+            cn,
+            alpha,
+            threshold,
+        }
     }
 
     pub fn update(&mut self, point: f64) {
@@ -122,7 +129,7 @@ impl CusumV1 {
 
 struct LastTwo<T> {
     prev: T,
-    curr: T
+    curr: T,
 }
 
 impl<T> LastTwo<T> {
@@ -145,8 +152,6 @@ impl<T> LastTwo<T> {
     pub fn set_curr(&mut self, curr: T) {
         self.curr = curr;
     }
-
-
 }
 
 impl LastTwo<f64> {

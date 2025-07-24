@@ -1,7 +1,7 @@
+use super::em_model::EmModel;
+use super::normal_params::NormalParamsError;
 use ndarray::{Array2, ArrayView2};
 use pyo3::pyclass;
-use crate::expect_max::normal_params::NormalParamsError;
-use super::em_model::EmModel;
 
 // Trait for any struct that checks if em model has converged
 pub trait HasConverged<T> {
@@ -33,16 +33,18 @@ pub trait HasConverged<T> {
 //     }
 // }
 
-
 #[derive(Clone)]
 pub struct EarlyStopEmModel<T: HasConverged<f64>> {
     pub(super) em_model: EmModel,
-    pub(super) converge_checker: T
+    pub(super) converge_checker: T,
 }
 
 impl<T: HasConverged<f64>> EarlyStopEmModel<T> {
-
-    pub fn update_check_convergence(&mut self, point: f64, threshold: f64) -> Result<(), NormalParamsError> {
+    pub fn update_check_convergence(
+        &mut self,
+        point: f64,
+        threshold: f64,
+    ) -> Result<(), NormalParamsError> {
         self.em_model.swap_last_sample(point);
         for _ in 0..self.em_model.epochs().value() {
             self.converge_checker.update_checker(&self.em_model);
@@ -56,19 +58,17 @@ impl<T: HasConverged<f64>> EarlyStopEmModel<T> {
     }
 
     pub fn has_converged(&self, threshold: f64) -> bool {
-        self.converge_checker.has_converged(&self.em_model, threshold)
+        self.converge_checker
+            .has_converged(&self.em_model, threshold)
     }
 }
 
-
-
 #[derive(Clone, Debug)]
 pub struct LikelihoodChecker<T> {
-    pub(super) prev_likelihood: Array2<T>
+    pub(super) prev_likelihood: Array2<T>,
 }
 
 impl LikelihoodChecker<f64> {
-
     // pub fn has_converged(&self, em: &EmModel, threshold: f64) -> bool {
     //     let diffs = em.likelihoods() - self.prev_likelihood();
     //     diffs.iter().all(|&diff| diff.abs() <= threshold)
@@ -85,11 +85,9 @@ impl LikelihoodChecker<f64> {
     pub fn prev_likelihood_view(&self) -> ArrayView2<f64> {
         self.prev_likelihood.view()
     }
-
 }
 
 impl HasConverged<f64> for LikelihoodChecker<f64> {
-
     fn update_checker(&mut self, em: &EmModel) {
         self.update_prev_likelihood(em);
     }

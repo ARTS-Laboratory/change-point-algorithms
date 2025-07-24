@@ -1,15 +1,15 @@
-use std::iter::zip;
-use ndarray::{Array1, Array2};
 use crate::expect_max::em_early_stop_model;
 use crate::expect_max::em_early_stop_model::{EarlyStopEmModel, LikelihoodChecker};
 use crate::expect_max::em_model_builder::BuildError::BadNormalValues;
 use crate::expect_max::em_model_builder::FieldStatus::Complete;
 use crate::expect_max::normal_params::{NormalParams, NormalParamsError};
+use ndarray::{Array1, Array2};
+use std::iter::zip;
 // use crate::expect_max::probability::Probability;
 // use pyo3::{pyclass, pymethods};
-use super::pos_int::{PositiveError, PositiveInteger};
-use super::normal::{InvalidFloatError, Normal};
 use super::em_model::EmModel;
+use super::normal::{InvalidFloatError, Normal};
+use super::pos_int::{PositiveError, PositiveInteger};
 
 // trait EmBuild {
 //     fn build_normal();
@@ -23,7 +23,7 @@ use super::em_model::EmModel;
 enum FieldStatus<T> {
     Complete(T),
     Incomplete(T),
-    NotStarted
+    NotStarted,
 }
 
 #[derive(Debug)]
@@ -58,9 +58,8 @@ pub struct EmBuilder {
     abnormals: Vec<NormalParams>,
     sample_arr: Option<Array1<f64>>,
     // likelihoods_arr: Option<Array2<f64>>,
-    epochs: PositiveInteger
+    epochs: PositiveInteger,
 }
-
 
 // todo make constrained members of classes.
 // #[pymethods]
@@ -68,29 +67,43 @@ impl EmBuilder {
     // #[new]
     pub fn new() -> Self {
         let normal = NormalParams::new(
-            Normal::new(0.0, 1.0)
-                .expect("The default values used should never fail"),
-            1.0).expect("The default parameters should never fail");
+            Normal::new(0.0, 1.0).expect("The default values used should never fail"),
+            1.0,
+        )
+        .expect("The default parameters should never fail");
         let abnormals: Vec<NormalParams> = Vec::new();
         let epochs: u32 = 1;
         Self {
-            normal, abnormals, sample_arr: None,
+            normal,
+            abnormals,
+            sample_arr: None,
             // likelihoods_arr: None,
-            epochs: PositiveInteger::new(epochs)
-                .expect("The default value used should never fail")}
+            epochs: PositiveInteger::new(epochs).expect("The default value used should never fail"),
+        }
     }
 
-    pub fn build_normal(&mut self, mean: f64, stddev: f64, prob: f64) -> Result<&mut EmBuilder, NormalParamsError> {
+    pub fn build_normal(
+        &mut self,
+        mean: f64,
+        stddev: f64,
+        prob: f64,
+    ) -> Result<&mut EmBuilder, NormalParamsError> {
         self.normal.update_params(mean, stddev, prob)?;
         Ok(self)
     }
 
-    pub fn build_abnormal(&mut self, abnormals: &[NormalParams]) -> Result<&mut EmBuilder, InvalidFloatError> {
+    pub fn build_abnormal(
+        &mut self,
+        abnormals: &[NormalParams],
+    ) -> Result<&mut EmBuilder, InvalidFloatError> {
         abnormals.clone_into(&mut self.abnormals);
         Ok(self)
     }
 
-    pub fn build_abnormal_from_tuples(&mut self, abnormals: &[(f64, f64, f64)]) -> Result<&mut EmBuilder, NormalParamsError> {
+    pub fn build_abnormal_from_tuples(
+        &mut self,
+        abnormals: &[(f64, f64, f64)],
+    ) -> Result<&mut EmBuilder, NormalParamsError> {
         for &(mean, stddev, prob) in abnormals {
             let dist = Normal::new(mean, stddev)?;
             let params = NormalParams::new(dist, prob)?;
@@ -113,9 +126,6 @@ impl EmBuilder {
         self.sample_arr = Some(sample_arr);
         self
     }
-
-
-
 }
 
 // todo deprecate this
@@ -134,7 +144,7 @@ pub struct EmBuilderOne<T> {
     normal: NormalParams,
     abnormals: Vec<NormalParams>,
     sample_arr: FieldStatus<Array1<T>>,
-    epochs: PositiveInteger
+    epochs: PositiveInteger,
 }
 
 #[derive(Debug)]
@@ -143,7 +153,7 @@ pub struct EmBuilderTwo<T> {
     abnormals: Vec<NormalParams>,
     sample_arr: Array1<T>,
     likelihoods_arr: FieldStatus<Array2<T>>,
-    epochs: PositiveInteger
+    epochs: PositiveInteger,
 }
 
 #[derive(Debug)]
@@ -153,27 +163,34 @@ pub struct EmBuilderLast<T> {
     sample_arr: Array1<T>,
     likelihoods_arr: Array2<T>,
     converge_checker: Option<LikelihoodChecker<f64>>,
-    epochs: PositiveInteger
+    epochs: PositiveInteger,
 }
 
 impl EmBuilderOne<f64> {
     // #[new]
     pub fn new() -> Self {
         let normal = NormalParams::new(
-            Normal::new(0.0, 1.0)
-                .expect("The default values used should never fail"),
-            1.0).expect("The default parameters should never fail");
+            Normal::new(0.0, 1.0).expect("The default values used should never fail"),
+            1.0,
+        )
+        .expect("The default parameters should never fail");
         let abnormals: Vec<NormalParams> = Vec::new();
         let epochs: u32 = 1;
         Self {
-            normal, abnormals, sample_arr: FieldStatus::NotStarted,
+            normal,
+            abnormals,
+            sample_arr: FieldStatus::NotStarted,
             // likelihoods_arr: None,
-            epochs: PositiveInteger::new(epochs)
-                .expect("The default value used should never fail")}
+            epochs: PositiveInteger::new(epochs).expect("The default value used should never fail"),
+        }
     }
 
-    pub fn build_normal(&mut self, mean: f64, stddev: f64, prob: f64) -> Result<&mut Self, BuildError<Self>> {
-
+    pub fn build_normal(
+        &mut self,
+        mean: f64,
+        stddev: f64,
+        prob: f64,
+    ) -> Result<&mut Self, BuildError<Self>> {
         // self.normal.update_params(mean, stddev, prob)?;
         self.normal.update_params(mean, stddev, prob)?;
         Ok(self)
@@ -184,7 +201,10 @@ impl EmBuilderOne<f64> {
         self
     }
 
-    pub fn build_abnormal_from_tuples(&mut self, abnormals: &[(f64, f64, f64)]) -> Result<&mut Self, BuildError<&mut Self>> {
+    pub fn build_abnormal_from_tuples(
+        &mut self,
+        abnormals: &[(f64, f64, f64)],
+    ) -> Result<&mut Self, BuildError<&mut Self>> {
         for &(mean, stddev, prob) in abnormals {
             let abnormal = NormalParams::from_tuple((mean, stddev, prob))?;
             self.abnormals.push(abnormal);
@@ -212,8 +232,11 @@ impl EmBuilderOne<f64> {
             let abnormals = self.abnormals.clone();
             let sample_arr = sample_arr.clone();
             Ok(EmBuilderTwo {
-                normal: self.normal, abnormals, sample_arr,
-                likelihoods_arr: FieldStatus::NotStarted, epochs: self.epochs
+                normal: self.normal,
+                abnormals,
+                sample_arr,
+                likelihoods_arr: FieldStatus::NotStarted,
+                epochs: self.epochs,
             })
         } else {
             Err(BuildError::IncompleteBuildError(self))
@@ -234,17 +257,20 @@ impl<T: Clone + num_traits::identities::Zero> EmBuilderTwo<T> {
         if let Complete(likelihoods_arr) = &self.likelihoods_arr {
             let sample_arr: Array1<T> = self.sample_arr.clone();
             Ok(EmBuilderLast {
-                normal: self.normal, abnormals: self.abnormals.clone(), sample_arr,
-                likelihoods_arr: likelihoods_arr.clone(), epochs: self.epochs, converge_checker: None})
+                normal: self.normal,
+                abnormals: self.abnormals.clone(),
+                sample_arr,
+                likelihoods_arr: likelihoods_arr.clone(),
+                epochs: self.epochs,
+                converge_checker: None,
+            })
         } else {
             Err(BuildError::IncompleteBuildError(self))
         }
     }
 }
 
-
 impl EmBuilderLast<f64> {
-
     // pub fn get_model(&self) {
     //     match self.converge_checker {
     //         Some(_) => self.get_early_stop_model(),
@@ -263,12 +289,17 @@ impl EmBuilderLast<f64> {
         };
         let em_model = self.get_standard_model();
         let converge_checker = checker.clone();
-        EarlyStopEmModel { em_model, converge_checker}
+        EarlyStopEmModel {
+            em_model,
+            converge_checker,
+        }
     }
 
     pub fn build_likelihood_converge_checker(&mut self) -> &mut Self {
         let likelihood_check = Array2::zeros(self.likelihoods_arr.raw_dim());
-        self.converge_checker = Some(LikelihoodChecker { prev_likelihood: likelihood_check });
+        self.converge_checker = Some(LikelihoodChecker {
+            prev_likelihood: likelihood_check,
+        });
         self
     }
 }
@@ -311,6 +342,9 @@ mod tests {
     fn test_em_builder_build_samples_from_slice() {
         let mut em = EmBuilder::new();
         em.build_samples_from_slice(&[-2.0, 1.0, 1.0]);
-        assert_eq!(em.sample_arr, Some(Array1::from_vec(vec![-2.0, 1.0, 1.0, 0.0])));
+        assert_eq!(
+            em.sample_arr,
+            Some(Array1::from_vec(vec![-2.0, 1.0, 1.0, 0.0]))
+        );
     }
 }

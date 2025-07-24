@@ -1,4 +1,3 @@
-
 pub trait Element {
     fn get_data(&self) -> f64;
 }

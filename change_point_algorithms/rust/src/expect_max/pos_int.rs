@@ -1,7 +1,7 @@
-use std::fmt;
-use std::num::NonZero;
 use pyo3::exceptions::PyValueError;
 use pyo3::PyErr;
+use std::fmt;
+use std::num::NonZero;
 
 #[derive(Copy, Clone, Debug)]
 pub struct PositiveError(u32);
@@ -61,7 +61,7 @@ impl PositiveInteger2 {
     pub fn new(value: u32) -> Result<Self, PositiveError> {
         match NonZero::new(value) {
             Some(x) => Ok(PositiveInteger2(x)),
-            None => Err(PositiveError(value))
+            None => Err(PositiveError(value)),
         }
     }
 
@@ -70,10 +70,12 @@ impl PositiveInteger2 {
     }
 
     pub fn set(&mut self, value: u32) -> Result<u32, PositiveError> {
-        NonZero::new(value).and_then(|x| {
-            self.0 = x;
-            Some(value)
-        }).ok_or(PositiveError(value))
+        NonZero::new(value)
+            .and_then(|x| {
+                self.0 = x;
+                Some(value)
+            })
+            .ok_or(PositiveError(value))
         // match NonZero::new(value) {
         //     Some(x) => {
         //         self.0 = x;

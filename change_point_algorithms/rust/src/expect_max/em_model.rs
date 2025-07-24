@@ -1,10 +1,9 @@
-// use std::fmt;
-use std::iter::zip;
-use itertools::izip;
-use pyo3::{pyclass, pymethods};
 use super::pos_int::PositiveInteger;
-use ndarray::{s, Array1, Array2, ArrayView2, Axis, Zip};
 use crate::expect_max::normal_params::{NormalParams, NormalParamsError};
+use itertools::izip;
+use ndarray::{s, Array1, Array2, ArrayView2, Axis, Zip};
+use pyo3::{pyclass, pymethods};
+use std::iter::zip;
 
 #[derive(Debug)]
 pub enum EmModelError {
@@ -34,15 +33,12 @@ pub struct EmModel {
     abnormals: Vec<NormalParams>,
     samples: Array1<f64>,
     likelihoods: Array2<f64>,
-    epochs: PositiveInteger
+    epochs: PositiveInteger,
 }
-
 
 #[pymethods]
 impl EmModel {
-
     // #[new]
-
 
     pub fn update(&mut self, point: f64) -> Result<(), NormalParamsError> {
         self.swap_last_sample(point);
@@ -61,7 +57,8 @@ impl EmModel {
         // raw probabilities
         let sample_view = self.samples.view();
         let mut normal_view = self.likelihoods.row_mut(0);
-        self.normal.probs_inplace_arr(&sample_view, &mut normal_view);
+        self.normal
+            .probs_inplace_arr(&sample_view, &mut normal_view);
         let mut abnormals = self.likelihoods.slice_mut(s![1.., ..]);
         let abnormals_view = abnormals.rows_mut();
         for (mut likelihood, abnormal) in zip(abnormals_view, self.abnormals.iter()) {
@@ -87,7 +84,8 @@ impl EmModel {
             let size = self.samples.len();
             let weights = self.update_weights(&densities, size);
             // update parameters
-            self.normal.update_params(means[0], variances[0].sqrt(), weights[0])?;
+            self.normal
+                .update_params(means[0], variances[0].sqrt(), weights[0])?;
             let param_iter = izip!(&means, &variances, &weights).skip(1);
             for (param, (&mean, &variance, &weight)) in zip(&mut self.abnormals, param_iter) {
                 param.update_params(mean, variance.sqrt(), weight)?;
@@ -99,12 +97,15 @@ impl EmModel {
 
     fn posterior_prob(&self, point: f64) -> f64 {
         let num: f64 = self.normal.likelihood(point);
-        let denom: f64 = num + self.abnormals.iter().map(|param| {
-            param.likelihood(point)
-        }).sum::<f64>();
+        let denom: f64 = num
+            + self
+                .abnormals
+                .iter()
+                .map(|param| param.likelihood(point))
+                .sum::<f64>();
         match denom {
             0.0 => num,
-            _ => num / denom
+            _ => num / denom,
         }
     }
 
@@ -118,17 +119,26 @@ impl EmModel {
             panic!("samples is empty");
         }
     }
-
 }
 
 impl EmModel {
-
-    pub fn new(normal: NormalParams, abnormals: Vec<NormalParams>, samples: Array1<f64>, epochs: PositiveInteger) -> Self {
+    pub fn new(
+        normal: NormalParams,
+        abnormals: Vec<NormalParams>,
+        samples: Array1<f64>,
+        epochs: PositiveInteger,
+    ) -> Self {
         let sample_size = samples.len();
         let num_params = abnormals.len() + 1;
         let likelihoods = Array2::<f64>::zeros((num_params, sample_size));
         // let last_likelihoods = Array2::from(&likelihoods);
-        Self { normal, abnormals, samples, likelihoods, epochs}
+        Self {
+            normal,
+            abnormals,
+            samples,
+            likelihoods,
+            epochs,
+        }
     }
 
     pub fn epochs(&self) -> PositiveInteger {
@@ -146,16 +156,18 @@ impl EmModel {
     fn update_means(&self, densities: &Array1<f64>) -> Array1<f64> {
         let sample_view = self.samples.view();
         // let means = (self.likelihoods * densities).sum_axis(Axis(1));
-        let means: Array1<f64> = self
-            .likelihoods
-            .map_axis(Axis(1), |row| row.dot(&sample_view)/*dot_product(&row, &sample_view)*/) / densities;
+        let means: Array1<f64> = self.likelihoods.map_axis(
+            Axis(1),
+            |row| row.dot(&sample_view), /*dot_product(&row, &sample_view)*/
+        ) / densities;
         means
     }
 
     fn update_variances(&self, densities: &Array1<f64>, means: &Array1<f64>) -> Array1<f64> {
         let sample_view = self.samples.view();
         let means_view = means.view();
-        let variances = Zip::from(self.likelihoods.rows()).and(&means_view)
+        let variances = Zip::from(self.likelihoods.rows())
+            .and(&means_view)
             .map_collect(|row, &mean| {
                 let value = (&sample_view - mean).powi(2);
                 // let temp = sample_view - mean;
@@ -163,7 +175,8 @@ impl EmModel {
                 let product = row.dot(&value);
                 // let product = dot_product(&row, &value);
                 product
-            }) / densities;
+            })
+            / densities;
         variances
     }
 

@@ -1,20 +1,25 @@
-use std::collections::VecDeque;
-use std::ops::{Deref, DerefMut};
-use pyo3::{pyclass, pymethods, PyResult};
-use statrs::function::beta::beta;
 use super::beta_cache::BetaCache;
 use crate::bocpd::NormalInverseGamma;
+use pyo3::{pyclass, pymethods, PyResult};
+use statrs::function::beta::beta;
+use std::collections::VecDeque;
+use std::ops::{Deref, DerefMut};
 
 #[pyclass]
 pub struct DistParams {
-    params: VecDeque<NormalInverseGamma>
+    params: VecDeque<NormalInverseGamma>,
 }
 
 #[pymethods]
 impl DistParams {
     #[new]
     pub fn new_py(alpha: f64, beta: f64, mu: f64, kappa: f64) -> PyResult<Self> {
-        let initial_params = NormalInverseGamma { alpha, beta, mu, kappa };
+        let initial_params = NormalInverseGamma {
+            alpha,
+            beta,
+            mu,
+            kappa,
+        };
         let mut params = VecDeque::new();
         params.push_back(initial_params);
         Ok(Self { params })
@@ -22,33 +27,44 @@ impl DistParams {
 
     pub fn reset(&mut self, alpha: f64, beta: f64, mu: f64, kappa: f64) -> PyResult<()> {
         self.params.clear();
-        self.params.push_back(NormalInverseGamma { alpha, beta, mu, kappa });
+        self.params.push_back(NormalInverseGamma {
+            alpha,
+            beta,
+            mu,
+            kappa,
+        });
         Ok(())
     }
 
     pub fn priors(&self, value: f64) -> Vec<f64> {
-        self.params.iter().map(|param| {
-            let denom = 2.0 * param.beta * (param.kappa + 1.0) / param.kappa;
-            let exponent = -(param.alpha + 0.5);
-            let t_value = ((value - param.mu).powi(2) / denom + 1.0).powf(exponent);
-            let result = t_value / (denom.sqrt() * beta(0.5, param.alpha));
-            result
-        }).collect()
+        self.params
+            .iter()
+            .map(|param| {
+                let denom = 2.0 * param.beta * (param.kappa + 1.0) / param.kappa;
+                let exponent = -(param.alpha + 0.5);
+                let t_value = ((value - param.mu).powi(2) / denom + 1.0).powf(exponent);
+                let result = t_value / (denom.sqrt() * beta(0.5, param.alpha));
+                result
+            })
+            .collect()
     }
 
     pub fn priors_cached(&self, value: f64, cache: &mut BetaCache) -> Vec<f64> {
-        self.params.iter().map(|param| {
-            let denom = 2.0 * param.beta * (param.kappa + 1.0) / param.kappa;
-            let exponent = -(param.alpha + 0.5);
-            let t_value = ((value - param.mu).powi(2) / denom + 1.0).powf(exponent);
-            // try to use the cache if it matches, else just calculate normally.
-            let beta_value = match cache.get_fixed_value() {
-                0.5 => cache.get_value(param.alpha),
-                _ => beta(0.5, param.alpha)
-            };
-            let result = t_value / (denom.sqrt() * beta_value);
-            result
-        }).collect()
+        self.params
+            .iter()
+            .map(|param| {
+                let denom = 2.0 * param.beta * (param.kappa + 1.0) / param.kappa;
+                let exponent = -(param.alpha + 0.5);
+                let t_value = ((value - param.mu).powi(2) / denom + 1.0).powf(exponent);
+                // try to use the cache if it matches, else just calculate normally.
+                let beta_value = match cache.get_fixed_value() {
+                    0.5 => cache.get_value(param.alpha),
+                    _ => beta(0.5, param.alpha),
+                };
+                let result = t_value / (denom.sqrt() * beta_value);
+                result
+            })
+            .collect()
     }
 
     pub fn update_no_change(&mut self, value: f64, alpha: f64, beta: f64, mu: f64, kappa: f64) {
@@ -57,13 +73,19 @@ impl DistParams {
             let new_kappa = kappa_plus;
             let new_alpha = params.alpha + 0.5;
             let new_mu = (params.kappa * params.mu + value) / kappa_plus;
-            let new_beta = params.beta + params.kappa * (value - params.mu).powi(2) / (2.0 * kappa_plus);
+            let new_beta =
+                params.beta + params.kappa * (value - params.mu).powi(2) / (2.0 * kappa_plus);
             params.kappa = new_kappa;
             params.alpha = new_alpha;
             params.mu = new_mu;
             params.beta = new_beta;
         }
-        self.params.push_front(NormalInverseGamma {alpha, beta, mu, kappa});
+        self.params.push_front(NormalInverseGamma {
+            alpha,
+            beta,
+            mu,
+            kappa,
+        });
     }
 }
 

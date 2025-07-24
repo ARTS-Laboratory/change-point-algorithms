@@ -1,15 +1,15 @@
+use pyo3::exceptions::PyValueError;
+use pyo3::{pyclass, pymethods, PyResult};
 use std::collections::VecDeque;
 use std::iter::zip;
 use std::ops::{Deref, DerefMut};
-use pyo3::{pyclass, pymethods, PyResult};
-use pyo3::exceptions::PyValueError;
 
 #[pyclass]
-pub struct SparseProb{
+pub struct SparseProb {
     #[pyo3(get)]
     pos: i64,
     #[pyo3(get, set)]
-    value: f64
+    value: f64,
 }
 
 #[pymethods]
@@ -17,7 +17,10 @@ impl SparseProb {
     #[new]
     fn new_py(run_length: i64, value: f64) -> PyResult<Self> {
         match run_length {
-            0.. => Ok(Self {pos: run_length, value}),
+            0.. => Ok(Self {
+                pos: run_length,
+                value,
+            }),
             ..0 => Err(PyValueError::new_err("run length must be nonnegative")),
         }
         // if run_length.is_positive() {
@@ -48,7 +51,7 @@ impl SparseProb {
 }
 
 #[pyclass]
-pub struct SparseProbs{
+pub struct SparseProbs {
     probs: VecDeque<SparseProb>,
 }
 
@@ -56,17 +59,20 @@ pub struct SparseProbs{
 impl SparseProbs {
     #[new]
     pub fn new_py() -> Self {
-        Self { probs: VecDeque::new() }
+        Self {
+            probs: VecDeque::new(),
+        }
     }
 
     pub fn reset(&mut self) {
         self.probs.clear();
-        self.probs.push_back(SparseProb {pos: 0, value: 1.0});
+        self.probs.push_back(SparseProb { pos: 0, value: 1.0 });
     }
 
     pub fn normalize(&mut self) {
         let total: f64 = self.probs.iter().map(|prob| prob.value).sum();
-        if total.is_normal() { // not zero,
+        if total.is_normal() {
+            // not zero,
             for prob in self.probs.iter_mut() {
                 prob.value /= total;
             }
@@ -75,7 +81,7 @@ impl SparseProbs {
 
     pub fn new_entry(&mut self, run_length: i64, value: f64) -> PyResult<()> {
         // todo make setter method that does the check.
-        let prob= SparseProb::new_py(run_length, value).and_then(|item| {
+        let prob = SparseProb::new_py(run_length, value).and_then(|item| {
             self.probs.push_front(item);
             Ok(())
         });
