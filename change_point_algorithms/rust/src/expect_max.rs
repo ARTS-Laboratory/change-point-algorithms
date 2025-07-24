@@ -1,14 +1,26 @@
+pub mod em_model;
+pub mod em_early_stop_model;
+pub mod em_model_builder;
+
+mod normal;
+mod normal_params;
+mod pos_int;
+mod probability;
+
 use std::{f64::consts::PI, iter::zip};
-use crate::element::Element;
+// use crate::element::Element;
 // struct Normal {
 //     mu: f64,
 //     var: f64
 // }
 
 
-pub fn expectation_maximization<'a, T: 'a + Element>(
-    safe: &[f64], not_safe: &[f64], unknowns: impl IntoIterator<Item=T> + ExactSizeIterator, mean_1: f64,
-     mean_2: f64, var_1: f64, var_2: f64, pi: f64, epochs: i64) -> Vec<f64> {
+// pub fn expectation_maximization<'a, T: 'a + Element>(
+//     safe: &[f64], not_safe: &[f64], unknowns: impl IntoIterator<Item=T> + ExactSizeIterator, mean_1: f64,
+//      mean_2: f64, var_1: f64, var_2: f64, pi: f64, epochs: i64) -> Vec<f64> {
+pub fn expectation_maximization<'a>(
+    safe: &[f64], not_safe: &[f64], unknowns: impl IntoIterator<Item=&'a f64> + ExactSizeIterator, mean_1: f64,
+    mean_2: f64, var_1: f64, var_2: f64, pi: f64, epochs: i64) -> Vec<f64> {
     let mut data = [safe, not_safe].concat();
     let len = safe.len() + not_safe.len() + 1;
     let i_len = len as i64;
@@ -22,14 +34,15 @@ pub fn expectation_maximization<'a, T: 'a + Element>(
     let mut out_1 = vec![0.0; len];
     let mut out_2 = vec![0.0; len];
     let mut out: Vec<f64> = Vec::with_capacity(unknowns.len());
-    for unknown in unknowns {
+    for &unknown in unknowns {
         // let value = unknown;
-        let value = unknown.get_data();
+        // let value = unknown.get_data();
         // let value = match unknown {
         //     DataLike::Rs64(item) => item,
         //     DataLike::Py(item) => item.extract().expect(""),
         // };
-        data.push(value);
+        // data.push(value);
+        data.push(unknown);
         for _ in 0..epochs {
             posterior_probs_inplace(
                 &data, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat,
@@ -50,7 +63,7 @@ pub fn expectation_maximization<'a, T: 'a + Element>(
             // }
         }
         let prob = posterior_prob(
-            value, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat);
+            unknown, pi_hat, mu2_hat, sig2_hat, mu1_hat, sig1_hat);
         out.push(prob);
         data.pop();
     }
@@ -194,23 +207,13 @@ fn update_means(probs: &[f64], inverse: &[f64], density: f64, inverse_density: f
 }
 
 fn dot_product(arr_1: &[f64], arr_2: &[f64]) -> f64 {
-    let dot_prod = zip(arr_1.iter(), arr_2.iter()).map(
-        |(a, b)| { a * b }).sum();
-    // let mut dot_prod = 0.0;
-    // for (item_1, item_2) in zip(arr_1, arr_2) {
-    //     dot_prod += item_1 * item_2;
-    // }
-    dot_prod
+    zip(arr_1.iter(), arr_2.iter()).map(
+        |(a, b)| { a * b }).sum()
 }
 
 fn variance_helper(probs: &[f64], events: &[f64], mean: f64) -> f64 {
-    let dot_prod = zip(probs.iter(), events.iter()).map(
-        |(a, b)| { a * (b - mean).powi(2) }).sum();
-    // let mut dot_prod = 0.0;
-    // for (item_1, item_2) in zip(probs, events) {
-    //     dot_prod += item_1 * (item_2 - mean).powi(2);
-    // }
-    dot_prod
+    zip(probs.iter(), events.iter()).map(
+        |(a, b)| { a * (b - mean).powi(2) }).sum()
     
 }
 
