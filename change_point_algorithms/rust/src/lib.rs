@@ -2,10 +2,15 @@ use bocpd::bocpd_model::BocpdModel;
 use bocpd::beta_cache::BetaCache;
 use bocpd::dist_params::DistParams;
 use bocpd::sparse_probs::{SparseProb, SparseProbs};
+use expect_max::em_model::EmModel;
+use expect_max::em_model_builder::EmBuilder;
+use expect_max::em_early_stop_model::{EmLikelihoodCheck};
+
 use pyo3::prelude::*;
 use std::iter::zip;
 
 pub mod bocpd;
+pub mod expect_max;
 
 /// Updates the probability distribution for a set of T-distributions with observed point.
 #[pyfunction]
@@ -58,5 +63,7 @@ fn change_point_algorithms(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SparseProb>()?;
     m.add_class::<SparseProbs>()?;
     m.add_class::<BocpdModel>()?;
+    m.add_class::<EmModel>()?;
+    m.add_class::<EmLikelihoodCheck>()?;
     Ok(())
 }
