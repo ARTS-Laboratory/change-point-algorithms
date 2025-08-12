@@ -81,11 +81,10 @@ impl SparseProbs {
 
     pub fn new_entry(&mut self, run_length: i64, value: f64) -> PyResult<()> {
         // todo make setter method that does the check.
-        let prob = SparseProb::new_py(run_length, value).and_then(|item| {
+        SparseProb::new_py(run_length, value).and_then(|item| {
             self.probs.push_front(item);
             Ok(())
-        });
-        prob
+        })
     }
 
     pub fn update_probs(&mut self, priors: Vec<f64>, hazard: f64) -> PyResult<()> {

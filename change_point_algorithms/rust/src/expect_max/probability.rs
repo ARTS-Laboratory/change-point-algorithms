@@ -50,7 +50,8 @@ impl Probability {
 }
 
 fn is_valid_probability(probability: f64) -> bool {
-    probability >= 0.0 && probability <= 1.0
+    (0.0..=1.0).contains(&probability)
+    // probability >= 0.0 && probability <= 1.0
 }
 
 #[cfg(test)]

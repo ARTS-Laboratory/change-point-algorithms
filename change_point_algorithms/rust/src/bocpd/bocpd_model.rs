@@ -36,7 +36,7 @@ impl BocpdModel {
             mu,
             kappa,
         };
-        let threshold = threshold.unwrap_or_else(|| DEFAULT_THRESHOLD);
+        let threshold = threshold.unwrap_or(DEFAULT_THRESHOLD);
         let prev_max = 0;
         let curr_max = 0;
         let mut probs = SparseProbs::new_py();

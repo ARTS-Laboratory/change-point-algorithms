@@ -109,7 +109,7 @@ fn calculate_probabilities(
     run_lengths: &mut VecDeque<i64>,
     probabilities: &mut VecDeque<f64>,
 ) {
-    let priors = calculate_priors(point, &parameters);
+    let priors = calculate_priors(point, parameters);
     let mut head = 0.0;
     let hazard = hazard_function(lamb);
     let negative_hazard = 1.0 - hazard;
@@ -142,7 +142,7 @@ fn calculate_probabilities_2(
     cache: &mut HashMap<(u64, u64), f64>,
 ) {
     // let priors = calculate_priors(point, &parameters);
-    let priors = calculate_priors_cached(point, &parameters, cache);
+    let priors = calculate_priors_cached(point, parameters, cache);
     // let priors = match cache {
     //     Some(cache) => calculate_priors_cached(point, &parameters, cache),
     //     None => calculate_priors(point, &parameters),
@@ -237,8 +237,7 @@ fn calculate_priors(point: f64, parameters: &VecDeque<NormalInverseGamma>) -> Ve
             let denom = 2.0 * params.beta * (params.kappa + 1.0) / params.kappa;
             let exponent = -(params.alpha + 0.5);
             let t_value = ((point - params.mu).powi(2) / denom + 1.0).powf(exponent);
-            let result = t_value / (denom.sqrt() * beta(0.5, params.alpha));
-            result
+            t_value / (denom.sqrt() * beta(0.5, params.alpha))
         })
         .collect();
     out
@@ -261,9 +260,7 @@ fn calculate_priors_cached<'a>(
         let denom = 2.0 * params.beta * (params.kappa + 1.0) / params.kappa;
         let exponent = -(params.alpha + 0.5);
         let t_value = ((point - params.mu).powi(2) / denom + 1.0).powf(exponent);
-        // let result = t_value / (denom.sqrt() * beta(0.5, params.alpha));
-        let result = t_value / (denom.sqrt() * get_beta(0.5, params.alpha, cache));
-        result
+        t_value / (denom.sqrt() * get_beta(0.5, params.alpha, cache))
     });
     out.into_iter()
 }
@@ -286,7 +283,7 @@ pub fn get_beta(steady_x: f64, increase_y: f64, cache: &mut HashMap<(u64, u64), 
             }
             _ => todo!("add functionality for other float types."),
         };
-        cache.insert(key, res.clone());
+        cache.insert(key, res);
         res
     }
 }

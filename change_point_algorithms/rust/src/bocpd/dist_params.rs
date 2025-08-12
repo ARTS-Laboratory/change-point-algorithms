@@ -43,8 +43,7 @@ impl DistParams {
                 let denom = 2.0 * param.beta * (param.kappa + 1.0) / param.kappa;
                 let exponent = -(param.alpha + 0.5);
                 let t_value = ((value - param.mu).powi(2) / denom + 1.0).powf(exponent);
-                let result = t_value / (denom.sqrt() * beta(0.5, param.alpha));
-                result
+                t_value / (denom.sqrt() * beta(0.5, param.alpha))
             })
             .collect()
     }
@@ -61,8 +60,7 @@ impl DistParams {
                     0.5 => cache.get_value(param.alpha),
                     _ => beta(0.5, param.alpha),
                 };
-                let result = t_value / (denom.sqrt() * beta_value);
-                result
+                t_value / (denom.sqrt() * beta_value)
             })
             .collect()
     }
