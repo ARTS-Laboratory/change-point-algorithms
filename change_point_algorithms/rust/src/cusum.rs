@@ -17,6 +17,18 @@ pub struct CusumV0 {
 
 #[pymethods]
 impl CusumV0 {
+    #[new]
+    pub fn new(mean: f64, variance: f64, mu: f64, alpha: f64, threshold: f64) -> Self {
+        let d = 0.0;
+        let scalar = 1.0 + alpha * 0.5;
+        let weight_no_diff = alpha / variance;
+        let cp = LastTwo<f64>::default();
+        let cn = LastTwo<f64>::default();
+        Self {
+            mean, variance, mu, cp, cn, d, alpha, threshold, scalar, weight_no_diff
+        }
+    }
+
     pub fn mean(&self) -> f64 {
         self.mean
     }
@@ -160,5 +172,11 @@ impl LastTwo<f64> {
         self.prev = self.curr;
         self.curr = item;
         out
+    }
+}
+
+impl Default for LastTwo<f64> {
+    fn default() -> Self {
+        LastTwo { prev: 0.0, curr: 0.0 }
     }
 }
