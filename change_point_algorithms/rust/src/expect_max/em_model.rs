@@ -170,19 +170,14 @@ impl EmModel {
             .and(&means_view)
             .map_collect(|row, &mean| {
                 let value = (&sample_view - mean).powi(2);
-                // let temp = sample_view - mean;
-                // let view = value.view();
-                let product = row.dot(&value);
-                // let product = dot_product(&row, &value);
-                product
+                row.dot(&value)
             })
             / densities;
         variances
     }
 
     fn update_weights(&self, densities: &Array1<f64>, size: usize) -> Array1<f64> {
-        let weights = densities / (size as f64);
-        weights
+        densities / (size as f64)
     }
 }
 
