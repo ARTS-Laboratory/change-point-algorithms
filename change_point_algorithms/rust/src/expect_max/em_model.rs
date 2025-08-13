@@ -149,7 +149,7 @@ impl EmModel {
         &self.likelihoods
     }
 
-    pub fn likelihoods_view(&self) -> ArrayView2<f64> {
+    pub fn likelihoods_view(&self) -> ArrayView2<'_, f64> {
         self.likelihoods.view()
     }
 
