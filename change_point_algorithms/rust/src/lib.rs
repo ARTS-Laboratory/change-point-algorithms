@@ -1,4 +1,4 @@
-use std::iter;
+use std::iter::{once, zip};
 use bocpd::beta_cache::BetaCache;
 use bocpd::bocpd_model::BocpdModel;
 use bocpd::dist_params::DistParams;
@@ -10,7 +10,7 @@ use expect_max::em_model_builder::EmBuilder;
 use expect_max::em_model_builder::EmBuilderOne;
 
 use pyo3::prelude::*;
-use std::iter::zip;
+use rand::distr::Distribution;
 
 pub mod bocpd;
 pub mod cusum;
@@ -50,7 +50,7 @@ fn calc_probabilities_cached(
 
 /// Truncate vectors
 #[pyfunction]
-fn truncate_vectors<'py>(
+fn truncate_vectors(
     threshold: f64,
     params: &mut DistParams,
     probs: &mut SparseProbs,
@@ -83,7 +83,7 @@ fn build_em_model(
     epochs: u32,
 ) -> PyResult<EmModel> {
     let (mean, stddev, prob) = normal;
-    let normal_iter = iter::once(&normal);
+    let normal_iter = once(&normal);
     let param_iter = normal_iter.chain(abnormals.iter());
     let samples: Vec<f64> = zip(param_iter, arr_sizes.iter())
         .map(|(params, &size)| {
@@ -111,7 +111,7 @@ fn build_em_early_stop_model(
     epochs: u32,
 ) -> PyResult<EmLikelihoodCheck> {
     let (mean, stddev, prob) = normal;
-    let normal_iter = iter::once(&normal);
+    let normal_iter = once(&normal);
     let param_iter = normal_iter.chain(abnormals.iter());
     let samples: Vec<f64> = zip(param_iter, arr_sizes.iter())
         .map(|(params, &size)| {
