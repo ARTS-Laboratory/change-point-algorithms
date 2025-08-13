@@ -83,7 +83,7 @@ impl LikelihoodChecker<f64> {
         &self.prev_likelihood
     }
 
-    pub fn prev_likelihood_view(&self) -> ArrayView2<f64> {
+    pub fn prev_likelihood_view(&self) -> ArrayView2<'_, f64> {
         self.prev_likelihood.view()
     }
 }
