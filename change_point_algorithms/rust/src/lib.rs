@@ -1,3 +1,4 @@
+use std::iter;
 use bocpd::beta_cache::BetaCache;
 use bocpd::bocpd_model::BocpdModel;
 use bocpd::dist_params::DistParams;
@@ -6,6 +7,7 @@ use cusum::{CusumV0, CusumV1};
 use expect_max::em_early_stop_model::EmLikelihoodCheck;
 use expect_max::em_model::EmModel;
 use expect_max::em_model_builder::EmBuilder;
+use expect_max::em_model_builder::EmBuilderOne;
 
 use pyo3::prelude::*;
 use std::iter::zip;
@@ -72,6 +74,67 @@ fn get_change_prob(priors: Vec<f64>, probs: &SparseProbs) -> f64 {
         .sum()
 }
 
+/// Use builder to construct expectation maximization model.
+#[pyfunction]
+fn build_em_model(
+    normal: (f64, f64, f64),
+    abnormals: Vec<(f64, f64, f64)>,
+    arr_sizes: Vec<u32>,
+    epochs: u32,
+) -> PyResult<EmModel> {
+    let (mean, stddev, prob) = normal;
+    let normal_iter = iter::once(&normal);
+    let param_iter = normal_iter.chain(abnormals.iter());
+    let samples: Vec<f64> = zip(param_iter, arr_sizes.iter())
+        .map(|(params, &size)| {
+            let (mean, stddev, _probs) = params;
+            let rng = rand::rng();
+            let n = rand_distr::Normal::new(*mean, *stddev).expect("please don't panic");
+            n.sample_iter(rng).take(size as usize)
+        })
+        .flatten()
+        .collect();
+    let mut em_builder = EmBuilder::new();
+    em_builder
+        .build_normal(mean, stddev, prob)?
+        .build_abnormal_from_tuples(&abnormals)?
+        .build_epochs(epochs)?
+        .build_samples_from_slice(&samples);
+    Ok(em_builder.get_model())
+}
+
+#[pyfunction]
+fn build_em_early_stop_model(
+    normal: (f64, f64, f64),
+    abnormals: Vec<(f64, f64, f64)>,
+    arr_sizes: Vec<u32>,
+    epochs: u32,
+) -> PyResult<EmLikelihoodCheck> {
+    let (mean, stddev, prob) = normal;
+    let normal_iter = iter::once(&normal);
+    let param_iter = normal_iter.chain(abnormals.iter());
+    let samples: Vec<f64> = zip(param_iter, arr_sizes.iter())
+        .map(|(params, &size)| {
+            let (mean, stddev, _probs) = params;
+            let rng = rand::rng();
+            let n = rand_distr::Normal::new(*mean, *stddev).expect("please don't panic");
+            n.sample_iter(rng).take(size as usize)
+        })
+        .flatten()
+        .collect();
+    let mut em_builder = EmBuilderOne::new();
+    let mut final_builder = em_builder.build_normal(mean, stddev, prob)?
+        .build_abnormal_from_tuples(&abnormals)?
+        .build_epochs(epochs)?
+        .build_samples_from_slice(&samples)
+        .next_builder()?
+        .build_likelihoods()
+        .next_builder()?;
+    final_builder.build_likelihood_converge_checker();
+    let wrapped_model = EmLikelihoodCheck::from_early_stop_model(final_builder.get_early_stop_model());
+    Ok(wrapped_model)
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn change_point_algorithms(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -79,6 +142,8 @@ fn change_point_algorithms(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calc_probabilities, m)?)?;
     m.add_function(wrap_pyfunction!(truncate_vectors, m)?)?;
     m.add_function(wrap_pyfunction!(get_change_prob, m)?)?;
+    m.add_function(wrap_pyfunction!(build_em_model, m)?)?;
+    m.add_function(wrap_pyfunction!(build_em_early_stop_model, m)?)?;
     m.add_class::<BetaCache>()?;
     m.add_class::<DistParams>()?;
     m.add_class::<SparseProb>()?;

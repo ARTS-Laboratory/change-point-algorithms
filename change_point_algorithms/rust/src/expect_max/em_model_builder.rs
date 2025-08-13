@@ -1,12 +1,11 @@
-use crate::expect_max::em_early_stop_model;
-use crate::expect_max::em_early_stop_model::{EarlyStopEmModel, LikelihoodChecker};
-use crate::expect_max::em_model_builder::BuildError::BadNormalValues;
-use crate::expect_max::em_model_builder::FieldStatus::Complete;
-use crate::expect_max::normal_params::{NormalParams, NormalParamsError};
+use super::em_early_stop_model::{EarlyStopEmModel, LikelihoodChecker};
+use super::em_model_builder::BuildError::BadNormalValues;
+use super::em_model_builder::FieldStatus::Complete;
+use super::normal_params::{NormalParams, NormalParamsError};
 use ndarray::{Array1, Array2};
 use std::iter::zip;
-// use crate::expect_max::probability::Probability;
-// use pyo3::{pyclass, pymethods};
+use pyo3::exceptions::PyValueError;
+use pyo3::PyErr;
 use super::em_model::EmModel;
 use super::normal::{InvalidFloatError, Normal};
 use super::pos_int::{PositiveError, PositiveInteger};
@@ -27,11 +26,21 @@ enum FieldStatus<T> {
 }
 
 #[derive(Debug)]
-pub enum BuildError<T> {
+pub enum BuildError<T: Send + Sync> {
     BadEpoch(PositiveError),
     BadNormalValues(NormalParamsError),
     // FieldConstructionError(T),
-    IncompleteBuildError(T),
+    IncompleteBuildError(MissingFieldError<T>),
+}
+
+impl<T: Send + Sync> From<BuildError<T>> for PyErr {
+    fn from(value: BuildError<T>) -> Self {
+        match value {
+            BuildError::BadEpoch(e) => e.into(),
+            BadNormalValues(e) => e.into(),
+            BuildError::IncompleteBuildError(e) => e.into(),
+        }
+    }
 }
 
 // impl<T> From<NormalParamsError> for BuildError<T> {
@@ -40,15 +49,33 @@ pub enum BuildError<T> {
 //     }
 // }
 
-impl<T> From<PositiveError> for BuildError<T> {
+impl<T: Send + Sync> From<PositiveError> for BuildError<T> {
     fn from(err: PositiveError) -> Self {
         BuildError::BadEpoch(err)
     }
 }
 
-impl<T> From<NormalParamsError> for BuildError<T> {
+impl<T: Send + Sync> From<NormalParamsError> for BuildError<T> {
     fn from(err: NormalParamsError) -> Self {
         BadNormalValues(err)
+    }
+}
+
+#[derive(Debug)]
+pub struct MissingFieldError<T> {
+    pub my_struct: T,
+    pub field: String,
+}
+
+impl<T: Send + Sync> From<MissingFieldError<T>> for BuildError<T> {
+    fn from(value: MissingFieldError<T>) -> Self {
+        BuildError::IncompleteBuildError(value)
+    }
+}
+
+impl<T> From<MissingFieldError<T>> for PyErr {
+    fn from(err: MissingFieldError<T>) -> PyErr {
+        PyValueError::new_err(format!("Tried to build object without completing <{}> field", err.field))
     }
 }
 
@@ -223,7 +250,7 @@ impl EmBuilderOne<f64> {
             *out = sample;
         }
         debug_assert_eq!(samples.len() + 1, sample_arr.len());
-        self.sample_arr = FieldStatus::Complete(sample_arr);
+        self.sample_arr = Complete(sample_arr);
         self
     }
 
@@ -239,12 +266,13 @@ impl EmBuilderOne<f64> {
                 epochs: self.epochs,
             })
         } else {
-            Err(BuildError::IncompleteBuildError(self))
+            // Err(BuildError::IncompleteBuildError(self.sample_arr))
+            Err(BuildError::from(MissingFieldError { my_struct: self, field: String::from("sample_arr") }))
         }
     }
 }
 
-impl<T: Clone + num_traits::identities::Zero> EmBuilderTwo<T> {
+impl<T: Clone + num_traits::identities::Zero + Send + Sync> EmBuilderTwo<T> {
     pub fn build_likelihoods(&mut self) -> &mut Self {
         let sample_size = self.sample_arr.len();
         let num_params = self.abnormals.len() + 1;
@@ -265,7 +293,8 @@ impl<T: Clone + num_traits::identities::Zero> EmBuilderTwo<T> {
                 converge_checker: None,
             })
         } else {
-            Err(BuildError::IncompleteBuildError(self))
+            // Err(BuildError::IncompleteBuildError(self))
+            Err(BuildError::from(MissingFieldError { my_struct: self, field: String::from("likelihoods_arr" )}))
         }
     }
 }
@@ -310,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_em_builder_default_constructor() {
-        let mut em = EmBuilder::new();
+        let _em = EmBuilder::new();
         // assert!(em);
         // let NormalParams {dist, prob} = em.normal.;
         // assert_eq!(prob, 1.0);

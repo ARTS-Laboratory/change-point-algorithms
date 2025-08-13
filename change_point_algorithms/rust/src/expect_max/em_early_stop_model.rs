@@ -3,7 +3,7 @@ use super::normal_params::NormalParamsError;
 use ndarray::{Array2, ArrayView2};
 use pyo3::pyclass;
 
-// Trait for any struct that checks if em model has converged
+/// Trait for any struct that checks if em model has converged
 pub trait HasConverged<T> {
     fn update_checker(&mut self, model: &EmModel);
     fn has_converged(&self, model: &EmModel, threshold: T) -> bool;
@@ -33,6 +33,7 @@ pub trait HasConverged<T> {
 //     }
 // }
 
+/// Expectation Maximization model that incorporates a check for early stopping.
 #[derive(Clone)]
 pub struct EarlyStopEmModel<T: HasConverged<f64>> {
     pub(super) em_model: EmModel,
@@ -105,13 +106,15 @@ macro_rules! create_interface {
         pub struct $name {
             inner: EarlyStopEmModel<$type>,
         }
-        // #[pymethods]
-        // impl $name {
-        //     #[new]
-        //     pub fn new(data: $type) -> Self {
-        //         Self { inner: EarlyStopEmModel { }}
-        //     }
-        // }
+        impl $name {
+            pub fn from_early_stop_model(early_stop_em_model: EarlyStopEmModel<$type>) -> Self {
+                Self { inner: early_stop_em_model }
+            }
+
+            pub fn from_model_and_checker(model: EmModel, checker: $type) -> Self {
+                Self { inner: EarlyStopEmModel { em_model: model, converge_checker: checker }}
+            }
+        }
     };
 }
 create_interface!(EmLikelihoodCheck, LikelihoodChecker<f64>);
