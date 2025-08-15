@@ -4,7 +4,7 @@ Created on Thu Dec 21 12:24:29 2023
 
 @author: localuser
 """
-import numpy as np
+import _change_point_algorithms
 
 
 def cusum(
@@ -112,6 +112,15 @@ def cusum_alg_generator(data, mean, std_dev, h, alpha):
             cp[idx], cn[idx] = 0, 0
         yield attack_likely
 
+def cusum_alg_v0_rust_hybrid(data, mean, std_dev, h, alpha):
+    """ """
+    prob_threshold = h * std_dev
+    model = _change_point_algorithms.CusumV0(mean, std_dev**2, alpha, h)
+    for idx, event in enumerate(data):
+        model.update(event)
+        probability = model.predict(event)
+        is_attack = probability > prob_threshold
+        yield is_attack
 
 def cusum_alg_v1(
         time, data, mean, std_dev, h, alpha):
@@ -142,6 +151,15 @@ def cusum_alg_v1_generator(data, mean, std_dev, h, alpha):
             cp[idx], cn[idx] = 0, 0
         yield attack_likely
 
+def cusum_alg_v1_rust_hybrid(data, mean, std_dev, h, alpha):
+    """ """
+    prob_threshold = h * std_dev
+    model = _change_point_algorithms.CusumV1(mean, std_dev, alpha, h)
+    for idx, event in enumerate(data):
+        model.update(event)
+        probability = model.predict(event)
+        is_attack = probability >= prob_threshold
+        yield is_attack
 
 def get_cusum_from_generator(time, data, mean, std_dev, h, alpha):
     """ """
