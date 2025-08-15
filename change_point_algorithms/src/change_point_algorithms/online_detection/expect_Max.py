@@ -1,16 +1,17 @@
 import math
+from typing import List, Iterable
 
+import _change_point_algorithms
 import numpy as np
-
 from numba import njit
-from typing import List, Optional, Iterable
 
-from change_point_algorithms.online_detection.model_helpers import detection_to_intervals_for_generator_v1, \
-    detection_to_intervals_for_generator_v1_with_progress
+from change_point_algorithms.online_detection.model_helpers import (
+    detection_to_intervals_for_generator_v1,
+    detection_to_intervals_for_generator_v1_with_progress)
 
 
 def expectation_maximization_generator(
-        safe, not_safe, unknowns, mean_1, mean_2, var_1,
+        safe, not_safe, unknowns: Iterable[float], mean_1, mean_2, var_1,
         var_2, pi, epochs=1):
     """ Perform expectation maximization on one unknown.
 
@@ -238,6 +239,40 @@ def update_attack_prob(density: float, size: int) -> float:
         :rtype: float
     """
     return density / size
+
+def em_rust_hybrid(data, safe_mean: float, safe_stddev: float, num_safe: int, unsafe_mean: float, unsafe_stddev: float, num_unsafe: int,
+                   # , mean_1, mean_2, var_1, var_2,
+                   pi, epochs=1, prob_threshold=0.05, early_stopping=False):
+    """ """
+    prob_threshold_normal = 1.0 - prob_threshold
+    if early_stopping:
+        early_stop_threshold = 1e-5
+        model = _change_point_algorithms.build_em_early_stop_model(
+            (safe_mean, safe_stddev, pi), [(unsafe_mean, unsafe_stddev, 1 - pi)],
+            [num_safe, num_unsafe], epochs=epochs,)
+        update_model = model.update_check_convergence
+        predict_model = model.predict
+        for idx, event in enumerate(data):
+            model.update_check_convergence(event, early_stop_threshold)
+            probability = model.predict(event)
+            # update_model(event, early_stop_threshold)
+            # probability = predict_model(event)
+            is_attack = probability < prob_threshold_normal
+            yield is_attack
+    else:
+        model = _change_point_algorithms.build_em_model(
+            (safe_mean, safe_stddev, pi), [(unsafe_mean, unsafe_stddev, 1 - pi)],
+            [num_safe, num_unsafe], epochs=epochs,)
+        update_model = model.update
+        predict_model = model.predict
+        for idx, event in enumerate(data):
+            update_model(event)
+            probability = predict_model(event)
+            # model.update(event)
+            # probability = model.predict(event)
+            is_attack = probability < prob_threshold_normal
+            yield is_attack
+
 
 def get_em_from_generator(
         time, normal_obs, abnormal_obs, unknowns, mean_1=None, mean_2=None,

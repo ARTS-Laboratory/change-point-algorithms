@@ -1,7 +1,7 @@
 use super::em_model::EmModel;
 use super::normal_params::NormalParamsError;
 use ndarray::{Array2, ArrayView2};
-use pyo3::pyclass;
+use pyo3::{pyclass, pymethods};
 
 /// Trait for any struct that checks if em model has converged
 pub trait HasConverged<T> {
@@ -106,6 +106,18 @@ macro_rules! create_interface {
         pub struct $name {
             inner: EarlyStopEmModel<$type>,
         }
+
+        #[pymethods]
+        impl $name {
+            pub fn update_check_convergence(
+        &mut self,
+        point: f64,
+        threshold: f64,
+        ) -> Result<(), NormalParamsError> { self.inner.update_check_convergence(point, threshold) }
+
+            pub fn predict(&self, point: f64) -> f64 { self.inner.em_model.predict(point) }
+        }
+
         impl $name {
             pub fn from_early_stop_model(early_stop_em_model: EarlyStopEmModel<$type>) -> Self {
                 Self { inner: early_stop_em_model }
