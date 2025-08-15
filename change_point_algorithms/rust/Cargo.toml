@@ -5,7 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "change_point_algorithms"
+name = "_change_point_algorithms"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]

@@ -137,6 +137,7 @@ fn build_em_early_stop_model(
 
 /// A Python module implemented in Rust.
 #[pymodule]
+#[pyo3(name = "_change_point_algorithms")]
 fn change_point_algorithms(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calc_probabilities_cached, m)?)?;
     m.add_function(wrap_pyfunction!(calc_probabilities, m)?)?;
