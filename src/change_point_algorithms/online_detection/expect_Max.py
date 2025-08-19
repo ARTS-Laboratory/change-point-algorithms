@@ -5,7 +5,7 @@ import _change_point_algorithms
 import numpy as np
 from numba import njit
 
-from change_point_algorithms.online_detection.model_helpers import (
+from src.change_point_algorithms.online_detection.model_helpers import (
     detection_to_intervals_for_generator_v1,
     detection_to_intervals_for_generator_v1_with_progress)
 
