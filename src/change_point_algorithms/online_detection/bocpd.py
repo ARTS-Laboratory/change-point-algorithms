@@ -3,12 +3,10 @@ import warnings
 from collections import deque
 
 import numpy as np
-from line_profiler import profile
 from numba import njit, vectorize
 
 try:
-    from change_point_algorithms import change_point_algorithms
-    from change_point_algorithms import run_bocpd, run_bocpd_inplace, DistParams, BetaCache, SparseProbs
+    import _change_point_algorithms
 except ModuleNotFoundError:
     warnings.warn('Rust module not included in environment.')
 from change_point_algorithms.online_detection.model_helpers import (
@@ -18,7 +16,7 @@ from change_point_algorithms.online_detection.model_helpers import (
 
 def bocpd_generator(data, mu, kappa, alpha, beta, lamb):
     """ Generator for Bayesian Online Change Point Detection Algorithm."""
-    my_data = np.asarray(data)
+    my_data: np.ndarray = np.asarray(data)
     maxes = deque((0,), maxlen=2)
     run_length_arr = np.array([0], dtype=np.uint32)
     probabilities = np.array([1.0])
@@ -45,48 +43,19 @@ def bocpd_generator(data, mu, kappa, alpha, beta, lamb):
         is_attack = val_prob <= 0.05
         yield is_attack
 
-
-# def bocpd_rust_hybrid(data, mu, kappa, alpha, beta, lamb):
-#     """ Use Bayesian Online Change Point Detection to detect change points in data."""
-#     threshold = 1e-8
-#     my_data = np.asarray(data)
-#     run_length = 1  # Iterations since last changepoint
-#     maxes = deque((0,), maxlen=2)
-#     sparse_probs = SparseProbs()
-#     sparse_probs.new_entry(0, 1.0)
-#     parameters: DistParams = DistParams(alpha, beta, mu, kappa)
-#     beta_cache = BetaCache(0.5)
-#     for idx, event in enumerate(my_data):
-#         change_point_algorithms.calc_probabilities_cached(event, lamb, parameters, sparse_probs, beta_cache)
-#         # tda_project_rusty.calc_probabilities(event, lamb, parameters, sparse_probs)
-#         new_size = change_point_algorithms.truncate_vectors(threshold, parameters, sparse_probs)
-#         max_idx, _ = sparse_probs.max_prob()
-#         maxes.append(max_idx)
-#         if maxes[-1] < maxes[0]:
-#             sparse_probs.reset()
-#             parameters.reset(alpha, beta, mu, kappa)
-#         else:
-#             parameters.update_no_change(event, alpha, beta, mu, kappa)
-#         # Calculate probability of change point
-#         # attack_probs = parameters.priors(event)
-#         attack_probs = parameters.priors_cached(event, beta_cache)
-#         val_prob = change_point_algorithms.get_change_prob(attack_probs, sparse_probs)
-#         is_attack = val_prob <= 0.05
-#         yield is_attack
-
-def bocpd_rust_hybrid(data, mu, kappa, alpha, beta, lamb, threshold=1e-8, with_cache=True):
+def bocpd_rust_hybrid(
+        data: np.typing.ArrayLike, mu: float, kappa: float, alpha: float,
+        beta: float, lamb: float, threshold=1e-8, with_cache=True):
     """ """
     prob_threshold = 0.05
     my_data = np.asarray(data)
-    model = change_point_algorithms.BocpdModel(alpha, beta, mu, kappa, with_cache, threshold)
+    model = _change_point_algorithms.BocpdModel(alpha, beta, mu, kappa, with_cache, threshold)
     for idx, event in enumerate(my_data):
         model.update(event, lamb)
-        probability = model.predict(event)
+        probability: float = model.predict(event)
         is_attack = probability <= prob_threshold
         yield is_attack
 
-@profile
-# @njit
 def calculate_probabilities(
         event, alpha, beta, mu, kappa, run_lengths, probabilities, lamb,
         trunc_threshold=1e-16):
@@ -169,7 +138,6 @@ def calculate_prior_helper(point, alphas, betas, mus, kappas):
     denom = 2 * betas * (kappas + 1.0) / kappas
     t_values = (point - mus)**2 / denom
     t_values += 1.0
-    # t_values **= -(alphas + 0.5)
     exponent = -(alphas + 0.5)
     t_values **= exponent
     t_values /= np.sqrt(denom)
@@ -182,7 +150,6 @@ def calculate_prior_arr_inplace(point, alphas, betas, mus, kappas, out):
     """ """
     calculate_prior_helper_inplace(point, alphas, betas, mus, kappas, out)
     out /= beta_numba(0.5, alphas)
-    # out /= scipy.special.beta(0.5, alphas)
 
 
 @njit
@@ -194,7 +161,6 @@ def calculate_prior_helper_inplace(point, alphas, betas, mus, kappas, out):
     denom[:] = 2 * betas * (kappas + 1.0) / kappas
     out[:] = (point - mus)**2 / denom
     out += 1.0
-    # t_values **= -(alphas + 0.5)
     exponent[:] = -(alphas + 0.5)
     out **= exponent
     out /= np.sqrt(denom)
@@ -212,22 +178,12 @@ def hazard_function(lam: float):
 @njit
 def t_func_arr(x_bar, mu_arr, s_arr, n_arr):
     """ """
-    # t_values = np.zeros_like(mu_arr)
     s_n_arr = s_arr * n_arr
     n_half = n_arr * 0.5
     t_values = ((x_bar - mu_arr)**2 / s_n_arr + 1.0) ** (-(n_half + 0.5))
 
     t_values /= (np.sqrt(s_n_arr) * beta_numba(0.5, n_arr / 2))
     return t_values
-    # old code
-    # t_values = (x_bar - mu_arr) / np.sqrt(s_arr)
-    # t_values = (1.0 + np.square(t_values) / n_arr) ** (-(n_arr + 1) / 2)
-    # # t_values /= (np.sqrt(n_arr) * t_func_arr_helper_beta(n_arr)) * np.sqrt(s_arr)
-    # t_values /= (np.sqrt(n_arr) * beta_numba(0.5, n_arr / 2)) * np.sqrt(s_arr)
-    # # t_values /= (np.sqrt(n_arr) * scipy.special.beta(0.5, n_arr / 2)) * np.sqrt(s_arr)
-    # return t_values
-    # coeffs = (np.sqrt(dfs) * scipy.special.beta(0.5, dfs / 2))
-    # return exponentials / (coeffs * np.sqrt(s_arr))
 
 
 @vectorize(['float64(float64, float64)', 'float32(float32, float32)'], cache=False, nopython=True)
@@ -238,7 +194,7 @@ def beta_numba(val_1, val_2):
 
 def get_bocpd_from_generator(
         time, data, mu, kappa, alpha, beta, lamb, with_progress=False):
-    """ """
+    """ Return data interval predictions for data run on Bayesian Online Change Point Detection Algorithm."""
     # Instantiating variables
     begin = 0
     # try to use rust version, if it's not in the wheel fall back to python implementation
