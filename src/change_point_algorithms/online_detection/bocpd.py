@@ -16,7 +16,7 @@ from change_point_algorithms.online_detection.model_helpers import (
 
 def bocpd_generator(data, mu, kappa, alpha, beta, lamb):
     """ Generator for Bayesian Online Change Point Detection Algorithm."""
-    my_data = np.asarray(data)
+    my_data: np.ndarray = np.asarray(data)
     maxes = deque((0,), maxlen=2)
     run_length_arr = np.array([0], dtype=np.uint32)
     probabilities = np.array([1.0])
@@ -43,14 +43,16 @@ def bocpd_generator(data, mu, kappa, alpha, beta, lamb):
         is_attack = val_prob <= 0.05
         yield is_attack
 
-def bocpd_rust_hybrid(data, mu, kappa, alpha, beta, lamb, threshold=1e-8, with_cache=True):
+def bocpd_rust_hybrid(
+        data: np.typing.ArrayLike, mu: float, kappa: float, alpha: float,
+        beta: float, lamb: float, threshold=1e-8, with_cache=True):
     """ """
     prob_threshold = 0.05
     my_data = np.asarray(data)
     model = _change_point_algorithms.BocpdModel(alpha, beta, mu, kappa, with_cache, threshold)
     for idx, event in enumerate(my_data):
         model.update(event, lamb)
-        probability = model.predict(event)
+        probability: float = model.predict(event)
         is_attack = probability <= prob_threshold
         yield is_attack
 
