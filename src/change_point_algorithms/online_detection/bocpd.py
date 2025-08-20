@@ -136,7 +136,6 @@ def calculate_prior_helper(point, alphas, betas, mus, kappas):
     denom = 2 * betas * (kappas + 1.0) / kappas
     t_values = (point - mus)**2 / denom
     t_values += 1.0
-    # t_values **= -(alphas + 0.5)
     exponent = -(alphas + 0.5)
     t_values **= exponent
     t_values /= np.sqrt(denom)
@@ -149,7 +148,6 @@ def calculate_prior_arr_inplace(point, alphas, betas, mus, kappas, out):
     """ """
     calculate_prior_helper_inplace(point, alphas, betas, mus, kappas, out)
     out /= beta_numba(0.5, alphas)
-    # out /= scipy.special.beta(0.5, alphas)
 
 
 @njit
@@ -161,7 +159,6 @@ def calculate_prior_helper_inplace(point, alphas, betas, mus, kappas, out):
     denom[:] = 2 * betas * (kappas + 1.0) / kappas
     out[:] = (point - mus)**2 / denom
     out += 1.0
-    # t_values **= -(alphas + 0.5)
     exponent[:] = -(alphas + 0.5)
     out **= exponent
     out /= np.sqrt(denom)
@@ -179,22 +176,12 @@ def hazard_function(lam: float):
 @njit
 def t_func_arr(x_bar, mu_arr, s_arr, n_arr):
     """ """
-    # t_values = np.zeros_like(mu_arr)
     s_n_arr = s_arr * n_arr
     n_half = n_arr * 0.5
     t_values = ((x_bar - mu_arr)**2 / s_n_arr + 1.0) ** (-(n_half + 0.5))
 
     t_values /= (np.sqrt(s_n_arr) * beta_numba(0.5, n_arr / 2))
     return t_values
-    # old code
-    # t_values = (x_bar - mu_arr) / np.sqrt(s_arr)
-    # t_values = (1.0 + np.square(t_values) / n_arr) ** (-(n_arr + 1) / 2)
-    # # t_values /= (np.sqrt(n_arr) * t_func_arr_helper_beta(n_arr)) * np.sqrt(s_arr)
-    # t_values /= (np.sqrt(n_arr) * beta_numba(0.5, n_arr / 2)) * np.sqrt(s_arr)
-    # # t_values /= (np.sqrt(n_arr) * scipy.special.beta(0.5, n_arr / 2)) * np.sqrt(s_arr)
-    # return t_values
-    # coeffs = (np.sqrt(dfs) * scipy.special.beta(0.5, dfs / 2))
-    # return exponentials / (coeffs * np.sqrt(s_arr))
 
 
 @vectorize(['float64(float64, float64)', 'float32(float32, float32)'], cache=False, nopython=True)
