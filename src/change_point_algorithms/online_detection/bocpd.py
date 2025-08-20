@@ -3,7 +3,6 @@ import warnings
 from collections import deque
 
 import numpy as np
-from line_profiler import profile
 from numba import njit, vectorize
 
 try:
@@ -85,8 +84,6 @@ def bocpd_rust_hybrid(data, mu, kappa, alpha, beta, lamb, threshold=1e-8, with_c
         is_attack = probability <= prob_threshold
         yield is_attack
 
-@profile
-# @njit
 def calculate_probabilities(
         event, alpha, beta, mu, kappa, run_lengths, probabilities, lamb,
         trunc_threshold=1e-16):
