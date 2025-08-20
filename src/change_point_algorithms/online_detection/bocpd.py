@@ -205,7 +205,7 @@ def beta_numba(val_1, val_2):
 
 def get_bocpd_from_generator(
         time, data, mu, kappa, alpha, beta, lamb, with_progress=False):
-    """ """
+    """ Return data interval predictions for data run on Bayesian Online Change Point Detection Algorithm."""
     # Instantiating variables
     begin = 0
     # try to use rust version, if it's not in the wheel fall back to python implementation
