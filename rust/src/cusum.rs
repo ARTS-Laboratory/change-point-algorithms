@@ -43,7 +43,7 @@ impl CusumV0 {
         self.update_cp(point, weight);
         self.update_cn(point, weight);
         self.set_d(self.mu.curr() - self.mean());
-        self.mu.append((1.0 - self.alpha) * self.mu.prev());
+        self.mu.append((1.0 - self.alpha) * self.mu.prev() + self.alpha * point);
     }
 
     pub fn predict(&mut self, _point: f64) -> f64 {
