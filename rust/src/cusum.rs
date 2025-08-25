@@ -22,7 +22,7 @@ impl CusumV0 {
         let d = 0.0;
         let scalar = 1.0 + alpha * 0.5;
         let weight_no_diff = alpha / variance;
-        let mu = LastTwo::default();
+        let mu = LastTwo { prev: 0.0, curr: mean}; // LastTwo::default();
         let cp = LastTwo::default();
         let cn = LastTwo::default();
         Self {
