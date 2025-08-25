@@ -47,7 +47,7 @@ impl CusumV0 {
     }
 
     pub fn predict(&mut self, _point: f64) -> f64 {
-        let out = self.cp.curr().max(self.cn.curr().abs());
+        let out: f64 = self.cp.curr().max(self.cn.curr().abs());
         if out > self.threshold {
             self.reset_current_shifts()
         }
