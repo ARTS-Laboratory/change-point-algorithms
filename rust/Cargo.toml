@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "_change_point_algorithms"
-crate-type = ["cdylib", "lib", "abi3-py310"]
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
 pyo3 = { version = "0.24.1", features = ["extension-module"] }
