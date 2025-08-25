@@ -18,16 +18,16 @@ readme = "README.md"
 
 dependencies = [
 #    "kaleido", # need it for saving plots from plotly
-    "matplotlib", # plotting library
+#    "matplotlib", # plotting library
     "maturin",
-    "more_itertools",
+#    "more_itertools",
     "numba", # speeding up some python functions
     "numpy",
-    "pandas", # table representation
+#    "pandas", # table representation
 #    "plotly", # plotting library
-    "scikit-learn",
+#    "scikit-learn",
     "scipy",
-    "ruptures", # offline change point detection
+#    "ruptures", # offline change point detection
     "tomlkit"
 ]
 
