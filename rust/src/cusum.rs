@@ -22,7 +22,7 @@ impl CusumV0 {
         let d = 0.0;
         let scalar = 1.0 + alpha * 0.5;
         let weight_no_diff = alpha / variance;
-        let mu = LastTwo::default();
+        let mu = LastTwo { prev: 0.0, curr: mean}; // LastTwo::default();
         let cp = LastTwo::default();
         let cn = LastTwo::default();
         Self {
@@ -43,11 +43,11 @@ impl CusumV0 {
         self.update_cp(point, weight);
         self.update_cn(point, weight);
         self.set_d(self.mu.curr() - self.mean());
-        self.mu.append((1.0 - self.alpha) * self.mu.prev());
+        self.mu.append((1.0 - self.alpha) * self.mu.prev() + self.alpha * point);
     }
 
     pub fn predict(&mut self, _point: f64) -> f64 {
-        let out = self.cp.curr().max(self.cn.curr().abs());
+        let out: f64 = self.cp.curr().max(self.cn.curr().abs());
         if out > self.threshold {
             self.reset_current_shifts()
         }
@@ -179,5 +179,122 @@ impl LastTwo<f64> {
 impl Default for LastTwo<f64> {
     fn default() -> Self {
         LastTwo { prev: 0.0, curr: 0.0 }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Last Two Tests
+    #[test]
+    fn test_last_two_constructor() {
+        let lt = LastTwo::new(0.0, 0.0);
+        assert_eq!(lt.prev, 0.0);
+        assert_eq!(lt.curr, 0.0);
+    }
+
+    #[test]
+    fn test_last_two_append() {
+        let mut lt = LastTwo::default();
+        lt.append(24.0);
+        assert_eq!(lt.curr, 24.0);
+        lt.append(77.42);
+        assert_eq!(lt.prev, 24.0);
+        assert_eq!(lt.curr, 77.42);
+    }
+
+    // Test CusumV0
+    #[test]
+    fn test_cusum_v0() {
+        let mean = 0.0;
+        let variance = 1.0;
+        let alpha = 0.5;
+        let threshold = 5.0;
+        let model = CusumV0::new(mean, variance, alpha, threshold);
+    }
+
+    fn make_cusum_v0() -> CusumV0 {
+        let mean = 0.0;
+        let variance = 1.0;
+        let alpha = 0.5;
+        let threshold = 5.0;
+        CusumV0::new(mean, variance, alpha, threshold)
+    }
+    #[test]
+    fn test_cusum_v0_normal_point() {
+        let mut model = make_cusum_v0();
+        let normal_point = 0.01;
+        for _idx in 0..5 {
+            model.update(normal_point);
+            model.predict(normal_point);
+        }
+        model.update(normal_point);
+        let prob = model.predict(normal_point);
+        assert!(prob < model.variance * model.threshold);
+    }
+
+    #[test]
+    fn test_cusum_v0_abnormal_point() {
+        let mut model = make_cusum_v0();
+        let abnormal_point = 20.0;
+        for _idx in 0..5 {
+            model.update(abnormal_point);
+            model.predict(abnormal_point);
+        }
+        model.update(abnormal_point);
+        dbg!(model.d);
+        model.predict(abnormal_point);
+        model.update(abnormal_point);
+        let prob = model.predict(abnormal_point);
+        dbg!(prob);
+        assert!(prob > model.variance * model.threshold);
+    }
+
+    // Test CusumV1
+    #[test]
+    fn test_cusum_v1() {
+        let mean = 0.0;
+        let variance = 1.0;
+        let alpha = 0.5;
+        let threshold = 5.0;
+        let model = CusumV1::new(mean, variance, alpha, threshold);
+    }
+
+    fn make_cusum_v1() -> CusumV1 {
+        let mean = 0.0;
+        let variance = 1.0;
+        let alpha = 0.5;
+        let threshold = 5.0;
+        CusumV1::new(mean, variance, alpha, threshold)
+    }
+
+    #[test]
+    fn test_cusum_v1_normal_point() {
+        let mut model = make_cusum_v1();
+        let normal_point = 0.01;
+        for _idx in 0..5 {
+            model.update(normal_point);
+            model.predict(normal_point);
+        }
+        model.update(normal_point);
+        let prob = model.predict(normal_point);
+        assert!(prob < model.variance * model.threshold);
+    }
+
+    #[test]
+    fn test_cusum_v1_abnormal_point() {
+        let mut model = make_cusum_v1();
+        let abnormal_point = 20.0;
+        for idx in 0..5 {
+            model.update(abnormal_point);
+            model.predict(abnormal_point);
+        }
+        model.update(abnormal_point);
+        model.predict(abnormal_point);
+        model.update(abnormal_point);
+        let prob = model.predict(abnormal_point);
+        dbg!(prob);
+        assert!(prob > model.variance * model.threshold);
     }
 }
