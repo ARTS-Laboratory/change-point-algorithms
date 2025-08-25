@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from src.change_point_algorithms.online_detection.expect_Max import em_rust_hybrid
+from change_point_algorithms.online_detection.expect_Max import em_rust_hybrid
 
 
 def get_parameters():
